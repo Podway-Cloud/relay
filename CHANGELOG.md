@@ -1,7 +1,14 @@
 # Changelog
 
-All notable changes to `relay` (the Podbay relay CLI). This mirrors the package published to
-npm as [`@podbay/relay`](https://www.npmjs.com/package/@podbay/relay).
+All notable changes to `relay` (the Podway relay CLI). This mirrors the package published to
+npm as [`@podway/relay`](https://www.npmjs.com/package/@podway/relay).
+
+## 0.2.4
+
+- **Republished under the Podway name.** The package source was renamed with everything else, but
+  npm was still serving 0.2.3 — published BEFORE the rename — so the listing, its description and
+  its README all still read "Podbay" to anyone installing it. No code change; this release exists to
+  make the published artifact match the source.
 
 ## 0.2.3
 
