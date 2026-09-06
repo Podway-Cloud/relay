@@ -127,7 +127,7 @@ npm as [`@podbay/relay`](https://www.npmjs.com/package/@podbay/relay).
 
 - **Relay egress tunnel, end to end.** A pod can drive a real browser whose connection comes
   from *your* IP (gateway routing + owner-side dialing) — the answer to sites that block
-  datacenter ranges at the edge. Exposed to pods as `$PODBAY_RELAY_PROXY`, and it fails closed.
+  datacenter ranges at the edge. Exposed to pods as `$PODWAY_RELAY_PROXY`, and it fails closed.
 - Tighter cookie-export guard.
 
 ## 0.1.4

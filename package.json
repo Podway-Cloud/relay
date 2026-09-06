@@ -1,7 +1,7 @@
 {
-  "name": "@podbay/relay",
+  "name": "@podway/relay",
   "version": "0.2.3",
-  "description": "Podbay relay — runs a fetch relay on your machine so a pod can read pages from your network, using sessions you sign into. Install: npm i -g @podbay/relay, then `relay start`.",
+  "description": "Podway relay — runs a fetch relay on your machine so a pod can read pages from your network, using sessions you sign into. Install: npm i -g @podway/relay, then `relay start`.",
   "type": "module",
   "bin": {
     "relay": "./dist/main.js"
@@ -33,10 +33,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/podbay-cloud/relay.git"
+    "url": "git+https://github.com/podway-cloud/relay.git"
   },
-  "homepage": "https://github.com/podbay-cloud/relay#readme",
+  "homepage": "https://github.com/podway-cloud/relay#readme",
   "bugs": {
-    "url": "https://github.com/podbay-cloud/relay/issues"
+    "url": "https://github.com/podway-cloud/relay/issues"
   }
 }

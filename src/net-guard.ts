@@ -1,5 +1,5 @@
 /**
- * VENDORED from `@podbay/shared/src/net-guard.ts` — keep the two IDENTICAL in behaviour.
+ * VENDORED from `@podway/shared/src/net-guard.ts` — keep the two IDENTICAL in behaviour.
  *
  * Why a copy: `pb` is published standalone to npm and builds with plain tsc, so it can
  * carry no workspace dependency. Why it is safe: `test/net-guard-parity.test.ts` runs

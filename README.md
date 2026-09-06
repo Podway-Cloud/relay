@@ -1,6 +1,6 @@
-# Podbay Relay
+# Podway Relay
 
-The Podbay relay lets your pods reach websites through your network instead of
+The Podway relay lets your pods reach websites through your network instead of
 a datacenter. This helps with sites that block cloud IPs. For sites you choose,
 the relay can also use a separate browser session that you sign into.
 
@@ -8,17 +8,17 @@ One relay handles two kinds of traffic:
 
 | mode | what the pod gets | used by |
 |---|---|---|
-| **fetch** | a page loaded by this machine, optionally with a session you provided | the agent's `podbay fetch get` command |
+| **fetch** | a page loaded by this machine, optionally with a session you provided | the agent's `podway fetch get` command |
 | **tunnel** | a proxy connection through your IP, without your cookies | crawlers, scripts, Playwright, and other tools that load pages themselves |
 
 The tunnel lets a pod run a real browser while the connection comes from your
-network. Pods receive it through `$PODBAY_RELAY_PROXY`. It **fails closed**: if
+network. Pods receive it through `$PODWAY_RELAY_PROXY`. It **fails closed**: if
 the relay is not running, those connections are refused instead of quietly
 leaving from the datacenter.
 
 ```bash
 # Your pod prints the exact command, pinned to a version and pairing code:
-npx @podbay/relay@<version> start --code <code> --accept
+npx @podway/relay@<version> start --code <code> --accept
 ```
 
 Once started, the relay runs in the background and handles both modes.
@@ -64,7 +64,7 @@ controls. While the relay runs, the dashboard is live. When stopped, it shows
 saved history in read-only mode. The CLI always prints its local URL, so it also
 works on headless machines without `xdg-open`.
 
-Activity is stored in owner-only, daily files under `~/.podbay/relay/events`.
+Activity is stored in owner-only, daily files under `~/.podway/relay/events`.
 Events include the pod ID when available, mode, sanitized target, timing,
 outcome, HTTP status, signed-in use, and tunnel byte counts. History is kept for
 30 days by default; the dashboard offers 7, 30, or 90 days and enforces a
@@ -73,7 +73,7 @@ storage limit.
 Before an event is written, URLs are stripped of usernames, passwords, query
 strings, and fragments. Logs never include cookies, authorization headers,
 browser storage, request or response bodies, or tunnel content. Detailed
-history and exports stay on your machine; Podbay receives only coarse,
+history and exports stay on your machine; Podway receives only coarse,
 domain-level telemetry. Clearing history does not clear pairing, sessions,
 paused pods, or blocked sites.
 

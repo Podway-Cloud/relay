@@ -6,7 +6,7 @@
  * owner, and the account that gets banned is theirs.
  */
 export const DISCLOSURE = `
-  relay lets a Podbay pod fetch web pages THROUGH THIS MACHINE — from your network,
+  relay lets a Podway pod fetch web pages THROUGH THIS MACHINE — from your network,
   so a site sees your home address, not a datacenter.
 
   What that means, plainly:

@@ -52,7 +52,7 @@ export class BrowserFetcher {
 
   private async pw() {
     return (await import("playwright").catch(() => {
-      throw new Error("Playwright missing. The relay bundles it; reinstall: npx @podbay/relay@latest");
+      throw new Error("Playwright missing. The relay bundles it; reinstall: npx @podway/relay@latest");
     })) as typeof import("playwright");
   }
 

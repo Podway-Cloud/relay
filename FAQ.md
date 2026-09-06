@@ -1,4 +1,4 @@
-# Running Podbay Relay on a headless host
+# Running Podway Relay on a headless host
 
 The relay can run on any NAS, Raspberry Pi, or other always-on machine that
 supports Node. This guide covers the common headless setup issues: finding
@@ -41,7 +41,7 @@ provides:
 
   ```bash
   export PATH=/path/to/node/bin:$PATH   # wherever npx actually lives, see above
-  npx @podbay/relay@latest start --gateway <url> --accept
+  npx @podway/relay@latest start --gateway <url> --accept
   ```
 
 - **A systemd host**: If you have root, create a service that runs the same
@@ -58,12 +58,12 @@ No. `--code` is only used for the first pairing. The relay saves a reconnect
 token locally, so later `start` commands reconnect automatically:
 
 ```bash
-npx @podbay/relay@latest start --gateway <url> --accept
+npx @podway/relay@latest start --gateway <url> --accept
 ```
 
 Do not save the original pairing code in your boot script; it expires and is
 not needed after pairing. To pair again, run
-`npx @podbay/relay@latest reset`. This also clears the relay's other saved data.
+`npx @podway/relay@latest reset`. This also clears the relay's other saved data.
 
 ## How do I open the dashboard remotely?
 
@@ -74,12 +74,12 @@ Create an SSH tunnel from your computer:
 ssh -L 7373:127.0.0.1:7373 user@your-nas
 ```
 
-Keep the tunnel open, run `npx @podbay/relay@latest status` on the relay host,
+Keep the tunnel open, run `npx @podway/relay@latest status` on the relay host,
 and open the printed `http://127.0.0.1:7373/...` URL on your computer.
 
 If the tunnel immediately resets, check whether the SSH server disables
 forwarding. Synology commonly sets `AllowTcpForwarding no`. Enabling it affects
-every authorized SSH user, not only Podbay, and requires administrator access:
+every authorized SSH user, not only Podway, and requires administrator access:
 
 ```bash
 sudo sed -i 's/^AllowTcpForwarding no/AllowTcpForwarding yes/' /etc/ssh/sshd_config

@@ -265,7 +265,7 @@ async function runDaemon(a: string[]): Promise<void> {
 async function cmdLogin(a: string[]): Promise<void> {
   const domain = normalizeDomain(a[0] ?? die("usage: relay login <domain>"));
   const pw = (await import("playwright").catch(() =>
-    die("Playwright missing — reinstall: npx @podbay/relay@latest"),
+    die("Playwright missing — reinstall: npx @podway/relay@latest"),
   )) as typeof import("playwright");
   log(`opening a browser so you can sign in to ${domain}. This is the relay's OWN profile.`);
   const ctx = await pw.chromium.launchPersistentContext(profileDir(), { headless: false, channel: "chrome" });
@@ -434,7 +434,7 @@ async function dispatch(a: string[]): Promise<void> {
 
 function usage(): void {
   log("");
-  log(`${c.bold("relay")} ${c.dim("— fetch web pages through this machine for your Podbay pods")}`);
+  log(`${c.bold("relay")} ${c.dim("— fetch web pages through this machine for your Podway pods")}`);
   log("");
   // `start` carries flags, so it gets its own line rather than blowing out the column.
   log(`  ${c.cyan("start")}  ${c.dim("run the relay in the background:")}`);

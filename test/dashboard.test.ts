@@ -16,7 +16,7 @@ describe("relay dashboard preview", () => {
     const html = await page.text();
     expect(page.headers.get("x-frame-options")).toBe("DENY");
     expect(page.headers.get("access-control-allow-origin")).toBeNull();
-    expect(html).toContain("Podbay relay");
+    expect(html).toContain("Podway relay");
     expect(html).toContain('role="tab"');
     // Activity split into two tabs: Live (in-flight) + Events (audit + filters).
     expect(html).toContain('data-tab="live"');

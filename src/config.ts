@@ -26,7 +26,7 @@ export interface RelayConfig {
   keepAwake?: boolean;
 }
 
-const dir = () => process.env.PB_RELAY_HOME ?? path.join(homedir(), ".podbay", "relay");
+const dir = () => process.env.PB_RELAY_HOME ?? path.join(homedir(), ".podway", "relay");
 const file = () => path.join(dir(), "config.json");
 export const profileDir = () => path.join(dir(), "profile");
 export const pidFile = () => path.join(dir(), "relay.pid");

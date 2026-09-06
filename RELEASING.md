@@ -4,8 +4,8 @@
 the shipped binary (it silently sat at 0.1.3 while npm was 0.1.7 once — a bad look for a tool
 people audit before running on their own machine):
 
-1. **npm** — `@podbay/relay`. Bump `version` in `package.json`, then `npm publish` from this dir.
-2. **Public source mirror** — [`github.com/podbay-cloud/relay`](https://github.com/podbay-cloud/relay),
+1. **npm** — `@podway/relay`. Bump `version` in `package.json`, then `npm publish` from this dir.
+2. **Public source mirror** — [`github.com/podway-cloud/relay`](https://github.com/podway-cloud/relay),
    with a git tag + GitHub Release per version.
 
 For step 2, after bumping the version and writing the new `## <version>` section in
