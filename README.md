@@ -46,7 +46,7 @@ Once started, the relay runs in the background and handles both modes.
 | `relay start --code <code> --gateway <url> --accept` | start the relay in the background |
 | `relay login <domain>` | allow signed-in fetches for one domain |
 | `relay dashboard` | open the local command center |
-| `relay status` | show the relay, gateway, and signed-in site status |
+| `relay status` | the relay at a glance, then requests per pod and per site (OK %, last error); `--since 1h\|24h\|7d`, `--all`, `--json` |
 | `relay stop` | stop it |
 | `relay reset` | remove saved sessions, logins, and pairing |
 

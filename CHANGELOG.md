@@ -3,6 +3,23 @@
 All notable changes to `relay` (the Podway relay CLI). This mirrors the package published to
 npm as [`@podway/relay`](https://www.npmjs.com/package/@podway/relay).
 
+## 0.2.6
+
+- **`relay status` shows what the relay did, as tables** — for a NAS or server where the web dashboard
+  is out of reach. One line for the relay (state, uptime, link, requests, OK %, tunnel data), then
+  requests per pod and per site with OK % and the last error. `--since 1h|24h|7d` (default 24h),
+  `--all` for more than 10 rows, `--json` for scripts. It reads the saved history only, so it stays fast
+  and works while the relay is stopped.
+
+## 0.2.5
+
+- **`relay stop` is quick and never hangs.** It now waits until the relay has really exited — at most
+  5 s, then it force-stops it — so a boot script that runs `relay stop` then `relay start` never races
+  the old relay. The relay itself also exits within 4 s, even if its browser is slow to close.
+- **Short commands start faster.** `relay status`, `relay stop` and the other short commands no longer
+  load the dashboard and network code, which matters on a slow NAS CPU (about 4× less startup work).
+- `relay restart` uses the same safe stop.
+
 ## 0.2.4
 
 - **Republished under the Podway name.** The package source was renamed with everything else, but

@@ -33,15 +33,31 @@ normal login shell. If `npx` works after you log in but fails in a script, set
 
 ## How do I make the relay survive a reboot?
 
-The relay itself does not need root. Use whichever startup mechanism your host
-provides:
+The relay itself does not need root. For a machine that starts it at boot, **install it once** instead
+of running it through `npx`: `npx` unpacks the package into a cache on every start, and a start that is
+cut off (a reboot, two starts at once) can leave that cache broken so the next start fails with
+`ENOTEMPTY`.
+
+```bash
+npm i -g @podway/relay@latest      # update later with the same command
+relay status                       # check it runs
+```
+
+If `npm i -g` says "permission denied", give npm a folder in your home first:
+
+```bash
+npm config set prefix ~/.npm-global
+echo 'export PATH=$HOME/.npm-global/bin:$PATH' >> ~/.profile && . ~/.profile
+```
+
+Then use whichever startup mechanism your host provides:
 
 - **Synology DSM**: Go to Control Panel → Task Scheduler → Create →
   Triggered Task → User-defined script, then choose **Boot-up**. Run:
 
   ```bash
-  export PATH=/path/to/node/bin:$PATH   # wherever npx actually lives, see above
-  npx @podway/relay@latest start --gateway <url> --accept
+  export PATH=$HOME/.npm-global/bin:/path/to/node/bin:$PATH   # where relay and node live
+  relay start --gateway <url> --accept
   ```
 
 - **A systemd host**: If you have root, create a service that runs the same
@@ -51,6 +67,9 @@ provides:
 
 The scheduler only needs to run the command once. `start` moves the relay into
 the background and exits.
+
+It is safe to run `relay stop` first, "just in case": it returns within a few seconds even on a
+slow NAS (it waits up to 5 s for the old relay to exit, then force-stops it).
 
 ## Do I need to pass `--code` again every time it starts?
 
@@ -85,3 +104,33 @@ every authorized SSH user, not only Podway, and requires administrator access:
 sudo sed -i 's/^AllowTcpForwarding no/AllowTcpForwarding yes/' /etc/ssh/sshd_config
 sudo systemctl restart sshd   # or: synosystemctl restart sshd, on some DSM versions
 ```
+
+## `npm error code ENOTEMPTY` when I run `npx @podway/relay`
+
+A previous `npx` run was cut off and left its cache folder half-written. Delete the cache (npm downloads
+it again) and switch to the installed relay (see "How do I make the relay survive a reboot?"):
+
+```bash
+rm -rf ~/.npm/_npx
+npm i -g @podway/relay@latest
+relay status
+```
+
+## How do I see what the relay did without the web dashboard?
+
+`relay status` prints it as tables — useful on a NAS where the dashboard's local page is out of reach:
+
+```
+STATE     UPTIME    LINK           REQ 24h   OK%  DATA
+running   2d 4h     connected          412   98%  61 MB
+
+POD                          REQ   OK%  LAST
+afisha crawler               301   99%  12 s ago
+crypto sail club              88   93%  3 min ago
+
+SITE                         REQ   OK%  LAST ERROR
+polymarket.com               145   97%  403 refused, 26 min ago
+```
+
+`--since 1h|24h|7d` changes the window, `--all` shows every row, `--json` is for scripts. DATA counts
+tunnel traffic only (plain fetches have no size recorded).

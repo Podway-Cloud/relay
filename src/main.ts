@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import WebSocket from "ws";
 import { spawn } from "node:child_process";
 import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -16,17 +15,15 @@ import {
   revokeLoginDomain,
   RelayConfig,
 } from "./config.js";
-import { RelayClient } from "./relay-client.js";
-import { RelayTunnel } from "./relay-tunnel.js";
-import { keepAwake } from "./keep-awake.js";
-import { BrowserFetcher } from "./browser-fetcher.js";
-import { RelayEventStore, type RelaySource } from "./audit.js";
-import { serveDashboard } from "./dashboard.js";
-import { RelayRuntime } from "./runtime.js";
-import { attachHeartbeat } from "./heartbeat.js";
 import { DISCLOSURE } from "./disclosure.js";
 import { c, rows } from "./colors.js";
 import { normalizeDomain } from "./domain.js";
+import type { RelaySource } from "./audit.js";
+import { stopPid } from "./stop.js";
+import { renderStatus, statusData, WINDOWS, type StatusWindow } from "./status.js";
+// Only `start` (the daemon) and `dashboard` need the transport, browser and dashboard modules.
+// They load lazily so `relay stop` / `relay status` stay quick on a slow NAS CPU (a DS118 runs the
+// boot task's `relay stop` before every start).
 
 /**
  * `relay` — one command starts a background relay; login/dashboard/stop modify it
@@ -133,6 +130,10 @@ async function cmdStart(a: string[]): Promise<void> {
 }
 
 async function runDaemon(a: string[]): Promise<void> {
+  const [{ default: WebSocket }, { RelayClient }, { RelayTunnel }, { keepAwake }, { BrowserFetcher }, { RelayEventStore }, { serveDashboard }, { RelayRuntime }, { attachHeartbeat }] = await Promise.all([
+    import("ws"), import("./relay-client.js"), import("./relay-tunnel.js"), import("./keep-awake.js"), import("./browser-fetcher.js"),
+    import("./audit.js"), import("./dashboard.js"), import("./runtime.js"), import("./heartbeat.js"),
+  ]);
   const gateway = arg(a, "--gateway")!;
   const code = arg(a, "--code") ?? "";
   const browser = new BrowserFetcher({
@@ -152,10 +153,12 @@ async function runDaemon(a: string[]): Promise<void> {
   const stop = async () => {
     if (stopping) return;
     stopping = true;
+    // Never hang on the way out: whatever the cleanup does, the process is gone in 4 s.
+    setTimeout(() => process.exit(0), 4000).unref();
     releaseKeepAwake();
     runtime.clearActive();
     dashboardClose?.();
-    await browser.close();
+    await Promise.race([browser.close().catch(() => undefined), new Promise((r) => setTimeout(r, 3000))]);
     try { unlinkSync(pidFile()); } catch {}
     try { unlinkSync(dashboardRuntimeFile()); } catch {}
     process.exit(0);
@@ -340,6 +343,9 @@ async function cmdDashboard(a: string[]): Promise<void> {
       return;
     }
   }
+  const [{ RelayEventStore }, { RelayRuntime }, { serveDashboard }] = await Promise.all([
+    import("./audit.js"), import("./runtime.js"), import("./dashboard.js"),
+  ]);
   const cfg = load();
   const store = preview ? undefined : new RelayEventStore({ retentionDays: cfg.retentionDays ?? 30 }).init();
   const runtime = preview ? undefined : new RelayRuntime({ daemon: "stopped" });
@@ -352,25 +358,23 @@ async function cmdDashboard(a: string[]): Promise<void> {
   await new Promise(() => {}); // stay up until Ctrl-C
 }
 
-async function cmdStatus(): Promise<void> {
+async function cmdStatus(a: string[] = []): Promise<void> {
+  const flag = (n: string) => a.includes(n);
+  const sinceArg = a[a.indexOf("--since") + 1];
+  const window: StatusWindow = a.includes("--since") && sinceArg && sinceArg in WINDOWS ? (sinceArg as StatusWindow) : "24h";
   const pid = isRunning();
   const cfg = load();
-  // Pad wider than the longest label ("dashboard", 9) so every value has a gutter —
-  // padEnd(9) left "dashboard" flush against its URL.
-  const label = (s: string) => c.dim(s.padEnd(11));
+  let startedAt: string | undefined;
+  try { startedAt = (JSON.parse(readFileSync(dashboardRuntimeFile(), "utf8")) as DashboardRuntimeRecord).startedAt; } catch {}
+  // audit.js is fs-only; reload() reads the saved history without pruning or writing.
+  const { RelayEventStore } = await import("./audit.js");
+  const store = new RelayEventStore({ retentionDays: 30 });
+  store.reload();
+  const data = statusData(store.query({ limit: 10_000 }), { state: pid ? "running" : "stopped", startedAt, link: pid ? await gatewayLinkState() : undefined }, window);
+  if (flag("--json")) return log(JSON.stringify({ ...data, pid, gateway: cfg.gatewayUrl ?? null, asYou: cfg.loginDomains }, null, 2));
+  log(renderStatus(data, { limit: flag("--all") ? Infinity : 10 }));
   log("");
-  log(`${label("relay")}${pid ? c.green(`running`) + c.dim(` (pid ${pid})`) : c.yellow("not running")}`);
-  // The PROCESS being alive is not the same as the gateway LINK being up — a slept host
-  // leaves a dead link the process can't see. Ask the daemon's own dashboard for the
-  // live state so status stops reporting "running" over a dead link.
-  if (pid) log(`${label("link")}${await gatewayLinkState()}`);
-  log(`${label("gateway")}${cfg.gatewayUrl ? c.cyan(cfg.gatewayUrl) : c.dim("(unset)")}`);
-  log(`${label("dashboard")}${dashboardUrl() ? c.cyan(dashboardUrl()!) : c.dim("relay dashboard opens saved history")}`);
-  log(
-    `${label("as-you")}${
-      cfg.loginDomains.length ? cfg.loginDomains.join(", ") : c.dim("no sites signed in — all fetches are clean")
-    }`,
-  );
+  log(c.dim(`gateway ${cfg.gatewayUrl ?? "(unset)"} · as-you ${cfg.loginDomains.length ? cfg.loginDomains.join(", ") : "none"} · --since 1h|24h|7d · --all · --json`));
   log("");
 }
 
@@ -380,18 +384,15 @@ async function cmdStatus(): Promise<void> {
  * link that dropped (host asleep/offline) instead of just "the process is alive". */
 async function gatewayLinkState(): Promise<string> {
   const base = dashboardUrl();
-  if (!base) return c.dim("unknown (dashboard not up yet)");
+  if (!base) return "starting";
   try {
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), 1500);
     const res = await fetch(`${base}/data`, { signal: ac.signal }).finally(() => clearTimeout(timer));
     const data = (await res.json()) as { state?: string };
-    if (data.state === "connected") return c.green("connected");
-    if (data.state === "reconnecting") return c.yellow("reconnecting… (host asleep or offline)");
-    if (data.state === "stopped") return c.yellow("stopped");
-    return c.dim("unknown");
+    return data.state === "connected" || data.state === "reconnecting" || data.state === "stopped" ? data.state : "unknown";
   } catch {
-    return c.yellow("unreachable — the relay daemon isn't responding (try: relay restart)");
+    return "unreachable"; // the daemon isn't answering — relay restart
   }
 }
 
@@ -400,9 +401,7 @@ async function gatewayLinkState(): Promise<string> {
 async function cmdRestart(a: string[]): Promise<void> {
   const pid = isRunning();
   if (pid) {
-    process.kill(pid, "SIGTERM");
-    try { unlinkSync(pidFile()); } catch {}
-    await new Promise((r) => setTimeout(r, 600)); // let it release the pid + dashboard port
+    await stopPid(pid, { files: [pidFile(), dashboardRuntimeFile()] }); // waits until it is gone (≤ 5 s)
     log(c.dim("restarting the relay…"));
   } else {
     log(c.dim("no relay was running — starting it."));
@@ -410,12 +409,13 @@ async function cmdRestart(a: string[]): Promise<void> {
   return cmdStart(a);
 }
 
-function cmdStop(): void {
+async function cmdStop(): Promise<void> {
   const pid = isRunning();
   if (!pid) return log(c.dim("no relay running."));
-  process.kill(pid, "SIGTERM");
-  try { unlinkSync(pidFile()); } catch {}
-  log(`${c.green("✓")} relay stopped.`);
+  const how = await stopPid(pid, { files: [pidFile(), dashboardRuntimeFile()] });
+  log(how === "killed"
+    ? `${c.green("✓")} relay stopped ${c.dim("(it did not exit within 5 s, so it was killed)")}.`
+    : `${c.green("✓")} relay stopped.`);
 }
 
 async function dispatch(a: string[]): Promise<void> {
@@ -423,7 +423,7 @@ async function dispatch(a: string[]): Promise<void> {
     case "start": return cmdStart(a.slice(1));
     case "login": return cmdLogin(a.slice(1));
     case "dashboard": return cmdDashboard(a.slice(1));
-    case "status": return cmdStatus();
+    case "status": return cmdStatus(a.slice(1));
     case "stop": return cmdStop();
     case "restart": return cmdRestart(a.slice(1));
     case "reset": resetProfile(); return log(`${c.green("✓")} wiped the relay's sessions, logins, and pairing.`);
